@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-cream-100 text-charcoal-900 font-sans antialiased min-h-screen selection:bg-brand-500 selection:text-white;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'tnum';
+  }
+
+  /* Warm subtle scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #FAF6EF;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #DBD1C0;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #C2B49D;
+  }
+}
+
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Warm Blueprint Grid Canvas Background */
+  .bg-grid-canvas {
+    background-color: #FAF6EF;
+    background-image: 
+      linear-gradient(to right, rgba(219, 209, 192, 0.35) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(219, 209, 192, 0.35) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+}
