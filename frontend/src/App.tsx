@@ -4,6 +4,7 @@ import { AuthProvider, useAuth, RoleType } from './context/AuthContext';
 import { JudgeDemoBanner } from './components/JudgeDemoBanner';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
+import Chatbot from "./components/Chatbot";
 
 import { DashboardPage } from './pages/DashboardPage';
 import { QuotationsListPage } from './pages/QuotationsListPage';
@@ -451,6 +452,7 @@ const MainLayout: React.FC = () => {
         </main>
 
       </div>
+       <Chatbot />
     </div>
   );
 };

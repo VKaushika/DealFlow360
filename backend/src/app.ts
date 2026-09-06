@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDatabase } from './config/database';
+import chatRoutes from "./routes/chatRoutes";
 
 import authRoutes from './routes/authRoutes';
 import customerRoutes from './routes/customerRoutes';
@@ -51,6 +52,7 @@ app.use('/api/deal-health', dealHealthRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/governance', governanceRoutes);
 app.use('/api/audit-logs', auditRoutes);
+app.use("/api/chat", chatRoutes);
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
