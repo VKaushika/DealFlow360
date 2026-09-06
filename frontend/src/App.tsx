@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth, RoleType } from './context/AuthContext';
+
 import { JudgeDemoBanner } from './components/JudgeDemoBanner';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -21,13 +22,20 @@ import { AuditLogsPage } from './pages/AuditLogsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { LoginPage } from './pages/LoginPage';
 
+import { LandingPage } from './pages/LandingPage';
+
 const parseHash = (): { page: string; id?: string } => {
   const hash = window.location.hash.replace(/^#\/?/, '');
-  if (!hash) return { page: 'dashboard' };
+
+  if (!hash) {
+    return { page: 'landing' };
+  }
 
   const [pathPart, queryPart] = hash.split('?');
-  const page = pathPart || 'dashboard';
-  let id: string | undefined = undefined;
+
+  const page = pathPart || 'landing';
+
+  let id: string | undefined;
 
   if (queryPart) {
     const params = new URLSearchParams(queryPart);
@@ -37,154 +45,411 @@ const parseHash = (): { page: string; id?: string } => {
   return { page, id };
 };
 
-const MainLayout: React.FC = () => {
-  const { role, user } = useAuth();
-  const initialRoute = parseHash();
-  const [activePage, setActivePage] = useState<string>(initialRoute.page);
-  const [selectedEntityId, setSelectedEntityId] = useState<string | undefined>(initialRoute.id);
+const INTERNAL_ROLES: RoleType[] = [
+  'ADMIN',
+  'SALES_REP',
+  'SALES_MANAGER',
+  'FINANCE_OPS',
+];
 
-  // Sync state with URL hash
-  const handleNavigate = (page: string, id?: string) => {
+const MainLayout: React.FC = () => {
+  const {
+    user,
+    role,
+    switchPersona,
+  } = useAuth();
+
+  const initialRoute = parseHash();
+
+  const [activePage, setActivePage] = useState<string>(
+    initialRoute.page
+  );
+
+  const [selectedEntityId, setSelectedEntityId] =
+    useState<string | undefined>(initialRoute.id);
+
+  /*
+   * Remember where the internal user came from before
+   * entering Customer Portal.
+   */
+  const [returnRole, setReturnRole] = useState<RoleType>(
+    () => {
+      const saved = sessionStorage.getItem(
+        'dealflow_return_role'
+      ) as RoleType | null;
+
+      return saved && INTERNAL_ROLES.includes(saved)
+        ? saved
+        : 'SALES_MANAGER';
+    }
+  );
+
+  const [returnPage, setReturnPage] = useState<string>(
+    () =>
+      sessionStorage.getItem(
+        'dealflow_return_page'
+      ) || 'dashboard'
+  );
+
+  /*
+   * Normal application navigation.
+   */
+  const handleNavigate = (
+    page: string,
+    id?: string
+  ) => {
     setSelectedEntityId(id);
     setActivePage(page);
 
-    const newHash = id ? `#/${page}?id=${id}` : `#/${page}`;
+    const newHash = id
+      ? `#/${page}?id=${id}`
+      : `#/${page}`;
+
     if (window.location.hash !== newHash) {
       window.location.hash = newHash;
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
   };
 
-  // Listen for browser Back/Forward buttons and direct hash changes
+  /*
+   * Called when entering Customer Portal.
+   * Save the internal user's current workspace.
+   */
+  const handleEnterCustomerPortal = async () => {
+    if (INTERNAL_ROLES.includes(role)) {
+      sessionStorage.setItem(
+        'dealflow_return_role',
+        role
+      );
+
+      sessionStorage.setItem(
+        'dealflow_return_page',
+        activePage === 'portal'
+          ? 'dashboard'
+          : activePage
+      );
+
+      setReturnRole(role);
+
+      setReturnPage(
+        activePage === 'portal'
+          ? 'dashboard'
+          : activePage
+      );
+    }
+
+    await switchPersona('CUSTOMER');
+
+    handleNavigate('portal');
+  };
+
+  /*
+   * Customer Portal Back button.
+   */
+  const handleCustomerBack = async () => {
+    const savedRole =
+      (sessionStorage.getItem(
+        'dealflow_return_role'
+      ) as RoleType | null) || returnRole;
+
+    const savedPage =
+      sessionStorage.getItem(
+        'dealflow_return_page'
+      ) || returnPage;
+
+    const targetRole =
+      INTERNAL_ROLES.includes(savedRole)
+        ? savedRole
+        : 'SALES_MANAGER';
+
+    await switchPersona(targetRole);
+
+    handleNavigate(
+      savedPage === 'portal'
+        ? 'dashboard'
+        : savedPage
+    );
+  };
+
+  /*
+   * Browser Back / Forward and direct hash changes.
+   */
   useEffect(() => {
     const handleHashChange = () => {
       const { page, id } = parseHash();
+
       setActivePage(page);
       setSelectedEntityId(id);
     };
 
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener(
+      'hashchange',
+      handleHashChange
+    );
+
+    return () => {
+      window.removeEventListener(
+        'hashchange',
+        handleHashChange
+      );
+    };
   }, []);
 
-  // ── RBAC: page-level access control ──
-  const ALL_INTERNAL = ['ADMIN', 'SALES_REP', 'SALES_MANAGER', 'FINANCE_OPS'];
-  const PAGE_ACCESS: Record<string, string[]> = {
-    'login':              [...ALL_INTERNAL, 'CUSTOMER'],
-    'dashboard':          ALL_INTERNAL,
-    'quotations':         ['ADMIN', 'SALES_REP', 'SALES_MANAGER'],
-    'quotation-builder':  ['ADMIN', 'SALES_REP', 'SALES_MANAGER'],
-    'approvals':          ['ADMIN', 'SALES_MANAGER', 'FINANCE_OPS'],
-    'fulfillment':        ALL_INTERNAL,
-    'backorders':         ['ADMIN', 'FINANCE_OPS'],
-    'billing':            ['ADMIN', 'FINANCE_OPS', 'SALES_MANAGER'],
-    'invoices':           ['ADMIN', 'FINANCE_OPS', 'SALES_MANAGER', 'CUSTOMER'],
-    'subscriptions':      ['ADMIN', 'FINANCE_OPS', 'SALES_MANAGER'],
-    'portal':             [...ALL_INTERNAL, 'CUSTOMER'],
-    'deal-health':        ['ADMIN', 'SALES_MANAGER', 'FINANCE_OPS'],
-    'customers':          ['ADMIN', 'SALES_REP', 'SALES_MANAGER'],
-    'products':           ALL_INTERNAL,
-    'governance':         ['ADMIN', 'SALES_MANAGER'],
-    'audit':              ['ADMIN', 'SALES_MANAGER', 'FINANCE_OPS'],
-    'reports':            ['ADMIN', 'SALES_MANAGER', 'FINANCE_OPS'],
-  };
+  /*
+   * If a customer somehow reaches an internal route,
+   * keep them inside Customer Portal.
+   */
+  useEffect(() => {
+    if (!user) return;
 
-  const isAllowed = (page: string): boolean => {
-    const allowed = PAGE_ACCESS[page];
-    if (!allowed) return false;
-    return allowed.includes(role);
-  };
+    if (
+      role === 'CUSTOMER' &&
+      activePage !== 'portal' &&
+      activePage !== 'invoices' &&
+      activePage !== 'login' &&
+      activePage !== 'landing'
+    ) {
+      setActivePage('portal');
+      setSelectedEntityId(undefined);
 
-  const renderActivePage = () => {
-    // Login is always accessible
-    if (activePage === 'login') {
-      return <LoginPage onNavigate={handleNavigate} />;
-    }
-
-    // CUSTOMER can only access portal / invoices / login — redirect everything else
-    if (role === 'CUSTOMER') {
-      if (activePage === 'portal' || activePage === 'invoices') {
-        return activePage === 'invoices'
-          ? <BillingPage onNavigate={handleNavigate} />
-          : <CustomerPortalPage onNavigate={handleNavigate} />;
+      if (window.location.hash !== '#/portal') {
+        window.location.hash = '#/portal';
       }
-      // Unauthorized → force to portal
-      return <CustomerPortalPage onNavigate={handleNavigate} />;
     }
+  }, [role, activePage, user]);
 
-    // Internal roles — check permission
-    if (!isAllowed(activePage)) {
-      // Redirect to dashboard with an "Access Denied" message
+  /*
+   * Render pages.
+   */
+  const renderActivePage = () => {
+    /*
+     * Public landing page.
+     */
+    if (!user && activePage === 'landing') {
       return (
-        <div className="max-w-lg mx-auto mt-20 text-center space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-rose-100 border border-rose-300 flex items-center justify-center">
-            <span className="text-2xl">🔒</span>
-          </div>
-          <h2 className="text-xl font-black text-charcoal-900">Access Denied</h2>
-          <p className="text-sm text-charcoal-500">
-            Your role <span className="font-mono font-bold bg-cream-200 px-2 py-0.5 rounded-lg">{role}</span> does not have permission to access <span className="font-mono font-bold bg-cream-200 px-2 py-0.5 rounded-lg">{activePage}</span>.
-          </p>
-          <button
-            onClick={() => handleNavigate('dashboard')}
-            className="mt-4 px-5 py-2.5 bg-charcoal-900 text-white text-xs font-bold rounded-xl shadow-subtle hover:bg-black transition-all"
-          >
-            Return to Dashboard
-          </button>
-        </div>
+        <LandingPage
+          onNavigate={handleNavigate}
+        />
       );
     }
 
+    /*
+     * Login.
+     */
+    if (activePage === 'login') {
+      return (
+        <LoginPage
+          onNavigate={handleNavigate}
+        />
+      );
+    }
+
+    /*
+     * Customer Portal.
+     */
+    if (role === 'CUSTOMER') {
+      if (
+        activePage === 'portal' ||
+        activePage === 'landing'
+      ) {
+        return (
+          <CustomerPortalPage
+            onNavigate={handleNavigate}
+            onBack={handleCustomerBack}
+          />
+        );
+      }
+
+      if (activePage === 'invoices') {
+        return (
+          <BillingPage
+            onNavigate={handleNavigate}
+          />
+        );
+      }
+
+      return (
+        <CustomerPortalPage
+          onNavigate={handleNavigate}
+          onBack={handleCustomerBack}
+        />
+      );
+    }
+
+    /*
+     * Internal users.
+     */
     switch (activePage) {
       case 'dashboard':
-        return <DashboardPage onNavigate={handleNavigate} />;
+        return (
+          <DashboardPage
+            onNavigate={handleNavigate}
+          />
+        );
+
       case 'quotations':
-        return <QuotationsListPage onNavigate={handleNavigate} />;
+        return (
+          <QuotationsListPage
+            onNavigate={handleNavigate}
+          />
+        );
+
       case 'quotation-builder':
-        return <QuotationBuilderPage quotationId={selectedEntityId} onNavigate={handleNavigate} />;
+        return (
+          <QuotationBuilderPage
+            quotationId={selectedEntityId}
+            onNavigate={handleNavigate}
+          />
+        );
+
       case 'approvals':
-        return <ApprovalsPage approvalId={selectedEntityId} onNavigate={handleNavigate} />;
+        return (
+          <ApprovalsPage
+            approvalId={selectedEntityId}
+            onNavigate={handleNavigate}
+          />
+        );
+
       case 'fulfillment':
-        return <FulfillmentPage onNavigate={handleNavigate} />;
+        return (
+          <FulfillmentPage
+            onNavigate={handleNavigate}
+          />
+        );
+
       case 'backorders':
-        return <BackordersPage onNavigate={handleNavigate} />;
+        return (
+          <BackordersPage
+            onNavigate={handleNavigate}
+          />
+        );
+
       case 'billing':
       case 'invoices':
-        return <BillingPage onNavigate={handleNavigate} />;
+        return (
+          <BillingPage
+            onNavigate={handleNavigate}
+          />
+        );
+
       case 'subscriptions':
-        return <SubscriptionsPage onNavigate={handleNavigate} />;
+        return (
+          <SubscriptionsPage
+            onNavigate={handleNavigate}
+          />
+        );
+
       case 'portal':
-        return <CustomerPortalPage onNavigate={handleNavigate} />;
+        return (
+          <CustomerPortalPage
+            onNavigate={handleNavigate}
+            onBack={handleCustomerBack}
+          />
+        );
+
       case 'deal-health':
-        return <DealHealthPage onNavigate={handleNavigate} />;
+        return (
+          <DealHealthPage
+            onNavigate={handleNavigate}
+          />
+        );
+
       case 'customers':
-        return <CustomersPage onNavigate={handleNavigate} />;
+        return (
+          <CustomersPage
+            onNavigate={handleNavigate}
+          />
+        );
+
       case 'products':
-        return <ProductsPage onNavigate={handleNavigate} />;
+        return (
+          <ProductsPage
+            onNavigate={handleNavigate}
+          />
+        );
+
       case 'governance':
-        return <GovernancePage onNavigate={handleNavigate} />;
+        return (
+          <GovernancePage
+            onNavigate={handleNavigate}
+          />
+        );
+
       case 'audit':
-        return <AuditLogsPage onNavigate={handleNavigate} />;
+        return (
+          <AuditLogsPage
+            onNavigate={handleNavigate}
+          />
+        );
+
       case 'reports':
-        return <ReportsPage onNavigate={handleNavigate} />;
+        return (
+          <ReportsPage
+            onNavigate={handleNavigate}
+          />
+        );
+
       default:
-        return <DashboardPage onNavigate={handleNavigate} />;
+        return (
+          <DashboardPage
+            onNavigate={handleNavigate}
+          />
+        );
     }
   };
 
+  const isCustomer = role === 'CUSTOMER';
+
+  const isPublic =
+    !user &&
+    (activePage === 'landing' ||
+      activePage === 'login');
+
   return (
     <div className="min-h-screen bg-cream-100 flex flex-col font-sans text-charcoal-900">
-      {/* Top Guided Demo Banner */}
-      <JudgeDemoBanner onNavigate={handleNavigate} />
 
-      {/* Main Header & Persona Switcher */}
-      <Navbar onNavigate={handleNavigate} activePage={activePage} />
+      {/* Internal-only top banner */}
+      {!isCustomer && !isPublic && (
+        <JudgeDemoBanner
+          onNavigate={handleNavigate}
+        />
+      )}
 
-      {/* App Body with Sidebar & Grid Canvas Content */}
+      {/* Internal Navbar only */}
+      {!isCustomer && !isPublic && (
+        <Navbar
+          onNavigate={handleNavigate}
+          activePage={activePage}
+          onCustomerPortal={handleEnterCustomerPortal}
+        />
+      )}
+
       <div className="flex-1 flex max-w-[1600px] w-full mx-auto">
-        {activePage !== 'login' && <Sidebar activePage={activePage} onNavigate={handleNavigate} />}
-        <main className={`flex-1 p-6 sm:p-8 lg:p-10 overflow-x-hidden min-h-[calc(100vh-4rem)] bg-grid-canvas ${activePage === 'login' ? 'max-w-5xl mx-auto' : ''}`}>
+
+        {/* Internal Sidebar only */}
+        {!isCustomer &&
+          !isPublic &&
+          activePage !== 'login' && (
+            <Sidebar
+              activePage={activePage}
+              onNavigate={handleNavigate}
+            />
+          )}
+
+        <main
+          className={`flex-1 p-6 sm:p-8 lg:p-10 overflow-x-hidden min-h-[calc(100vh-4rem)] bg-grid-canvas ${
+            isPublic
+              ? 'max-w-6xl mx-auto w-full'
+              : ''
+          }`}
+        >
           {renderActivePage()}
         </main>
+
       </div>
     </div>
   );

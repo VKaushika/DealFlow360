@@ -48,17 +48,21 @@ export const LoginPage: React.FC<{
     }
 
     try {
-      if (activeTab === 'LOGIN') {
-        await login(email, password);
-        setSuccessMsg('Authenticated successfully! Redirecting...');
-        setTimeout(() => {
-          if (role === 'CUSTOMER') {
-            onNavigate('portal');
-          } else {
-            onNavigate('dashboard');
-          }
-        }, 600);
-      } else {
+     if (activeTab === 'LOGIN') {
+ const loggedInUser = await login(email, password);
+
+setSuccessMsg(
+  'Authenticated successfully! Redirecting...'
+);
+
+setTimeout(() => {
+  if (loggedInUser.role === 'CUSTOMER') {
+    onNavigate('portal');
+  } else {
+    onNavigate('dashboard');
+  }
+}, 600);
+}else {
         // Sign up
         const res = await api.register({
           name: fullName || 'New Team Member',
@@ -111,7 +115,7 @@ export const LoginPage: React.FC<{
         className="inline-flex items-center gap-2 text-xs font-bold text-charcoal-600 hover:text-charcoal-950 px-3 py-1.5 rounded-xl bg-white border border-cream-border shadow-subtle transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        <span>← Back to Dashboard</span>
+        <span> Back to Dashboard</span>
       </button>
 
       {/* ─── Active Session Card ─── */}

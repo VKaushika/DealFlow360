@@ -101,7 +101,7 @@ export const DashboardPage: React.FC<{ onNavigate: (page: string, id?: string) =
             className="inline-flex items-center gap-2 bg-charcoal-900 hover:bg-black text-white text-xs font-bold px-5 py-3 rounded-2xl shadow-subtle transition-all transform hover:-translate-y-0.5"
           >
             <Plus className="w-4 h-4" />
-            <span>+ New quotation</span>
+            <span> New quotation</span>
           </button>
         </div>
       </div>
