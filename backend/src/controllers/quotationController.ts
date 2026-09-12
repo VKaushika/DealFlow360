@@ -271,7 +271,7 @@ export class QuotationController {
     res: Response
   ): Promise<void> {
     try {
-      const {
+      let {
         customerId,
         title,
         items,
@@ -280,6 +280,11 @@ export class QuotationController {
         submitForApproval,
         submit,
       } = req.body;
+
+      // Customer requests always belong to the authenticated customer account.
+      if (req.user?.role === 'CUSTOMER') {
+        customerId = req.user.customerId;
+      }
 
       if (!customerId || !items || items.length === 0) {
         res.status(400).json({

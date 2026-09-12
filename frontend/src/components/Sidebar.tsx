@@ -50,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate }) => {
                 D
               </div>
               <div>
-                <p className="text-xs font-bold text-charcoal-900">David Miller</p>
+                <p className="text-xs font-bold text-charcoal-900">Ananya Mehta</p>
                 <p className="text-[10px] text-charcoal-500 font-mono font-medium">Buyer Portal</p>
               </div>
             </div>
@@ -101,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate }) => {
           <div className="p-3.5 bg-white rounded-2xl border border-cream-border text-xs shadow-subtle">
             <p className="font-bold text-charcoal-900">ABC Corporation</p>
             <p className="text-[11px] text-brand-700 font-bold mt-0.5">Tier: GOLD (15% Max)</p>
-            <p className="text-[10px] text-charcoal-500 mt-1">Buyer: David Miller</p>
+            <p className="text-[10px] text-charcoal-500 mt-1">Buyer: Ananya Mehta</p>
           </div>
 
           <button

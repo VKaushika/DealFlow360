@@ -315,7 +315,7 @@ export const ApprovalsPage: React.FC<{
                     <StatusBadge status={selectedApproval.customerId?.tier || 'GOLD'} size="xs" />
                   </div>
                   <p className="text-xs text-charcoal-600 mt-1 font-medium">
-                    Sales Rep: <strong className="text-charcoal-900">{selectedApproval.salesRepId?.name || 'Sarah Miller'}</strong> ({selectedApproval.salesRepId?.email || 'sarah.rep@dealflow360.com'})
+                    Sales Rep: <strong className="text-charcoal-900">{selectedApproval.salesRepId?.name || 'Priya Singh'}</strong> ({selectedApproval.salesRepId?.email || 'sarah.rep@dealflow360.com'})
                   </p>
                 </div>
 

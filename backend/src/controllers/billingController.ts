@@ -5,13 +5,29 @@ import { Payment } from '../models/Payment';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { BillingService } from '../services/billingService';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { Quotation } from '../models/Quotation';
 
 export class BillingController {
   public static async generate(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { quotationId } = req.body;
+      const requestedQuotationId = quotationId || req.params.quotationId;
+
+      if (req.user?.role === 'CUSTOMER') {
+        const quotation = await Quotation.findById(requestedQuotationId);
+        if (!quotation || quotation.customerId.toString() !== req.user.customerId) {
+          res.status(403).json({ success: false, message: 'Forbidden: You cannot generate billing for this quotation.' });
+          return;
+        }
+
+        if (!quotation.isCustomerConfirmed || quotation.stage !== 'READY_FOR_FULFILLMENT') {
+          res.status(400).json({ success: false, message: 'Confirm the quotation before generating a bill.' });
+          return;
+        }
+      }
+
       const result = await BillingService.generateBillingForQuotation(
-        quotationId || req.params.quotationId,
+        requestedQuotationId,
         req.user?.id,
         req.user?.name
       );

@@ -507,9 +507,15 @@ const seedDatabase = async () => {
     // 9. CUSTOMERS (150+ Customers including ABC Corporation)
     // ==========================================
     console.log('[Seed] Creating Customers...');
+    const simpleNames = [
+      'Jyoti', 'Priya', 'Rama', 'Chimu', 'Ananya', 'Arjun', 'Kavya', 'Rohan',
+      'Meera', 'Aarav', 'Neha', 'Vikram', 'Isha', 'Rahul', 'Pooja', 'Kiran',
+      'Sneha', 'Amit', 'Nisha', 'Dev', 'Shreya', 'Manoj', 'Tara', 'Varun',
+    ];
+
     // Judge Demo Customer:
     const custAbc = await Customer.create({
-      name: 'David Miller',
+      name: 'Ananya Mehta',
       code: 'CUST-ABC-01',
       email: 'david@abccorp.com',
       phone: '+91 98765 43210',
@@ -529,7 +535,7 @@ const seedDatabase = async () => {
     });
 
     const custBeta = await Customer.create({
-      name: 'Sarah Jenkins',
+      name: 'Priya Nair',
       code: 'CUST-BETA-02',
       email: 'sarah@betaindustries.com',
       phone: '+91 98111 22334',
@@ -548,7 +554,7 @@ const seedDatabase = async () => {
     });
 
     const custAcme = await Customer.create({
-      name: 'Robert Vance',
+      name: 'Rama Iyer',
       code: 'CUST-ACME-03',
       email: 'robert@acmecorp.in',
       phone: '+91 99222 33445',
@@ -581,7 +587,7 @@ const seedDatabase = async () => {
       const cName = `${companyNames[i % companyNames.length]} ${Math.floor(i / companyNames.length) > 0 ? (i + 1) : ''}`.trim();
       const tier = tiersList[i % tiersList.length];
       const customer = await Customer.create({
-        name: `Contact Person ${i}`,
+        name: simpleNames[(i - 1) % simpleNames.length],
         code: `CUST-${String(100 + i).padStart(4, '0')}`,
         email: `contact${i}@${cName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`,
         phone: `+91 98${String(10000000 + i).slice(-8)}`,
@@ -607,7 +613,7 @@ const seedDatabase = async () => {
     // ==========================================
     console.log('[Seed] Creating Users & RBAC Personas...');
     const userAdmin = await User.create({
-      name: 'Alexander Cross',
+      name: 'Jyoti Sharma',
       email: 'admin@dealflow360.com',
       passwordHash: defaultPasswordHash,
       role: 'ADMIN',
@@ -616,7 +622,7 @@ const seedDatabase = async () => {
     });
 
     const userSalesRep = await User.create({
-      name: 'Sarah Miller',
+      name: 'Priya Singh',
       email: 'sarah.rep@dealflow360.com',
       passwordHash: defaultPasswordHash,
       role: 'SALES_REP',
@@ -625,7 +631,7 @@ const seedDatabase = async () => {
     });
 
     const userSalesManager = await User.create({
-      name: 'Marcus Sterling',
+      name: 'Rama Patel',
       email: 'marcus.mgr@dealflow360.com',
       passwordHash: defaultPasswordHash,
       role: 'SALES_MANAGER',
@@ -634,7 +640,7 @@ const seedDatabase = async () => {
     });
 
     const userFinance = await User.create({
-      name: 'Fiona Vance',
+      name: 'Chimu Rao',
       email: 'fiona.fin@dealflow360.com',
       passwordHash: defaultPasswordHash,
       role: 'FINANCE_OPS',
@@ -643,7 +649,7 @@ const seedDatabase = async () => {
     });
 
     const userCustomer = await User.create({
-      name: 'David Miller',
+      name: 'Ananya Mehta',
       email: 'david@abccorp.com',
       passwordHash: defaultPasswordHash,
       role: 'CUSTOMER',
@@ -660,7 +666,7 @@ const seedDatabase = async () => {
       ];
       const assignedRole = roles[i % roles.length];
       const u = await User.create({
-        name: `User ${assignedRole} ${i}`,
+        name: simpleNames[(i + 4) % simpleNames.length],
         email: `user${i}.${assignedRole.toLowerCase()}@dealflow360.com`,
         passwordHash: defaultPasswordHash,
         role: assignedRole,

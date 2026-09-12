@@ -104,6 +104,10 @@ export const BillingPage: React.FC<{
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedInvoice) return;
+    if (paymentAmount <= 0 || paymentAmount > selectedInvoice.dueBalance) {
+      setErrorMessage('Enter a payment amount greater than 0 and no more than the remaining balance.');
+      return;
+    }
     try {
       setActionLoading(true);
       setSuccessMessage('');
@@ -320,7 +324,8 @@ export const BillingPage: React.FC<{
                 <input
                   type="number"
                   max={selectedInvoice.dueBalance}
-                  min={1}
+                  min={0.01}
+                  step="0.01"
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(parseFloat(e.target.value) || 0)}
                   className="w-full bg-cream-50 border border-cream-border text-charcoal-900 rounded-xl p-2.5 font-mono font-bold text-sm focus:border-brand-500 focus:outline-none"

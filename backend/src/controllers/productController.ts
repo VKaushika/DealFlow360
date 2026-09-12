@@ -5,7 +5,7 @@ import { WarehouseStock } from '../models/WarehouseStock';
 import { AuthRequest } from '../middleware/authMiddleware';
 
 export class ProductController {
-  public static async getAll(req: Request, res: Response): Promise<void> {
+  public static async getAll(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { search, category, type, billingType } = req.query;
       const query: any = { isActive: true };
@@ -48,7 +48,14 @@ export class ProductController {
         })
       );
 
-      res.json({ success: true, count: enrichedProducts.length, data: enrichedProducts });
+      const data = req.user?.role === 'CUSTOMER'
+        ? enrichedProducts.map((product) => {
+            const { unitCost, marginAmount, marginPct, stockByWarehouse, ...customerProduct } = product;
+            return { ...customerProduct, stockAvailable: product.totalAvailable > 0 };
+          })
+        : enrichedProducts;
+
+      res.json({ success: true, count: data.length, data });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }

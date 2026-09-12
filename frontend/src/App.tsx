@@ -23,6 +23,7 @@ import { ReportsPage } from './pages/ReportsPage';
 import { LoginPage } from './pages/LoginPage';
 
 import { LandingPage } from './pages/LandingPage';
+import Chatbot from './components/Chatbot';
 
 const parseHash = (): { page: string; id?: string } => {
   const hash = window.location.hash.replace(/^#\/?/, '');
@@ -57,6 +58,7 @@ const MainLayout: React.FC = () => {
     user,
     role,
     switchPersona,
+    logout,
   } = useAuth();
 
   const initialRoute = parseHash();
@@ -148,31 +150,14 @@ const MainLayout: React.FC = () => {
   };
 
   /*
-   * Customer Portal Back button.
+   * Customer Portal Back button returns to authentication.
+   * A customer must explicitly sign in again before entering an internal workspace.
    */
-  const handleCustomerBack = async () => {
-    const savedRole =
-      (sessionStorage.getItem(
-        'dealflow_return_role'
-      ) as RoleType | null) || returnRole;
-
-    const savedPage =
-      sessionStorage.getItem(
-        'dealflow_return_page'
-      ) || returnPage;
-
-    const targetRole =
-      INTERNAL_ROLES.includes(savedRole)
-        ? savedRole
-        : 'SALES_MANAGER';
-
-    await switchPersona(targetRole);
-
-    handleNavigate(
-      savedPage === 'portal'
-        ? 'dashboard'
-        : savedPage
-    );
+  const handleCustomerBack = () => {
+    sessionStorage.removeItem('dealflow_return_role');
+    sessionStorage.removeItem('dealflow_return_page');
+    logout();
+    handleNavigate('login');
   };
 
   /*
@@ -222,6 +207,21 @@ const MainLayout: React.FC = () => {
     }
   }, [role, activePage, user]);
 
+  useEffect(() => {
+    if (
+      !user &&
+      activePage !== 'landing' &&
+      activePage !== 'login'
+    ) {
+      setActivePage('landing');
+      setSelectedEntityId(undefined);
+
+      if (window.location.hash !== '') {
+        window.location.hash = '';
+      }
+    }
+  }, [activePage, user]);
+
   /*
    * Render pages.
    */
@@ -230,6 +230,14 @@ const MainLayout: React.FC = () => {
      * Public landing page.
      */
     if (!user && activePage === 'landing') {
+      return (
+        <LandingPage
+          onNavigate={handleNavigate}
+        />
+      );
+    }
+
+    if (!user && activePage !== 'login') {
       return (
         <LandingPage
           onNavigate={handleNavigate}
@@ -451,6 +459,8 @@ const MainLayout: React.FC = () => {
         </main>
 
       </div>
+
+      {user && <Chatbot />}
     </div>
   );
 };

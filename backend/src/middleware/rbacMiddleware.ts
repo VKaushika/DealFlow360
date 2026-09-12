@@ -114,6 +114,9 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
   CUSTOMER: [
     Permission.PORTAL_VIEW,
     Permission.QUOTATION_VIEW,
+    Permission.QUOTATION_CREATE,
+    Permission.PRODUCT_VIEW,
+    Permission.BILLING_GENERATE,
     Permission.PORTAL_COUNTER_DISCOUNT,
     Permission.PORTAL_CONFIRM,
     Permission.BILLING_VIEW,

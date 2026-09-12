@@ -76,31 +76,31 @@ export const Navbar: React.FC<NavbarProps> = ({
     {
       role: 'SALES_REP',
       label: 'Sales Rep',
-      userName: 'Sarah Miller',
+      userName: 'Priya Singh',
       badge: 'Sales',
     },
     {
       role: 'SALES_MANAGER',
       label: 'Sales Manager',
-      userName: 'Marcus Sterling',
+      userName: 'Rama Patel',
       badge: 'Manager',
     },
     {
       role: 'FINANCE_OPS',
       label: 'Finance & Ops',
-      userName: 'Fiona Vance',
+      userName: 'Chimu Rao',
       badge: 'Finance',
     },
     {
       role: 'CUSTOMER',
       label: 'Customer Portal',
-      userName: 'David Miller',
+      userName: 'Ananya Mehta',
       badge: 'Buyer',
     },
     {
       role: 'ADMIN',
       label: 'Administrator',
-      userName: 'Alexander Cross',
+      userName: 'Jyoti Sharma',
       badge: 'Admin',
     },
   ];

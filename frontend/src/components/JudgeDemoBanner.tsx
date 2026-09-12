@@ -18,7 +18,7 @@ const DEMO_STEPS: JudgeStep[] = [
   { id: 5, title: 'Upsell & Cross-Sell Additions', role: 'SALES_REP', description: 'Add recommended 3-Year Warranty from the Live Upsell Drawer. Totals and margin update immediately.', navTarget: 'quotation-builder' },
   { id: 6, title: 'Fulfillment Warehouse Auto-Split', role: 'FINANCE_OPS', description: 'Allocate stock for 10 Laptops: Auto-splits Main Warehouse (6) + East Depot (4), Backorders: 0.', navTarget: 'fulfillment' },
   { id: 7, title: 'Hybrid Billing Generation', role: 'FINANCE_OPS', description: 'Generates separated One-Time Invoice (Laptops+Services) and Recurring Subscription (Support).', navTarget: 'billing' },
-  { id: 8, title: 'Customer Portal: Counter-Offer', role: 'CUSTOMER', description: 'Customer (David @ ABC Corp) opens restricted portal and counters with 20% discount.', navTarget: 'portal' },
+  { id: 8, title: 'Customer Portal: Counter-Offer', role: 'CUSTOMER', description: 'Customer (Ananya @ ABC Corp) opens restricted portal and counters with 20% discount.', navTarget: 'portal' },
   { id: 9, title: 'Discount Re-evaluation & Re-approval', role: 'SALES_MANAGER', description: 'Counter-discount triggers automatic re-evaluation and restarts approval workflow.', navTarget: 'approvals' },
   { id: 10, title: 'Confirm Deal & Record Payment', role: 'FINANCE_OPS', description: 'Customer confirms. Record Cash/Bank payment on invoice. Deal Health & Reports update dynamically!', navTarget: 'billing' },
 ];

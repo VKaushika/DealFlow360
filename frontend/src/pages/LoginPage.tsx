@@ -18,6 +18,21 @@ import {
   LogOut,
 } from 'lucide-react';
 
+const DEMO_ACCOUNTS: Array<{
+  role: RoleType;
+  label: string;
+  name: string;
+  userId: string;
+  email: string;
+  password: string;
+}> = [
+  { role: 'SALES_REP', label: 'Sales Rep', name: 'Priya Singh', userId: 'sales.rep', email: 'sarah.rep@dealflow360.com', password: 'password123' },
+  { role: 'SALES_MANAGER', label: 'Sales Manager', name: 'Rama Patel', userId: 'sales.manager', email: 'marcus.mgr@dealflow360.com', password: 'password123' },
+  { role: 'FINANCE_OPS', label: 'Finance & Ops', name: 'Chimu Rao', userId: 'finance.ops', email: 'fiona.fin@dealflow360.com', password: 'password123' },
+  { role: 'CUSTOMER', label: 'Customer Portal', name: 'Ananya Mehta', userId: 'customer.portal', email: 'david@abccorp.com', password: 'password123' },
+  { role: 'ADMIN', label: 'Administrator', name: 'Jyoti Sharma', userId: 'administrator', email: 'admin@dealflow360.com', password: 'password123' },
+];
+
 export const LoginPage: React.FC<{
   onNavigate: (page: string, id?: string) => void;
 }> = ({ onNavigate }) => {
@@ -25,8 +40,8 @@ export const LoginPage: React.FC<{
   const [activeTab, setActiveTab] = useState<'LOGIN' | 'SIGNUP'>('LOGIN');
 
   // Form states
-  const [email, setEmail] = useState<string>('sarah.rep@dealflow360.com');
-  const [password, setPassword] = useState<string>('password123');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
   const [companyName, setCompanyName] = useState<string>('ABC Corporation');
   const [selectedRole, setSelectedRole] = useState<RoleType>('SALES_REP');
@@ -111,11 +126,11 @@ setTimeout(() => {
     <div className="max-w-4xl mx-auto py-6 space-y-6">
       {/* Back button */}
       <button
-        onClick={() => onNavigate('dashboard')}
+        onClick={() => onNavigate('landing')}
         className="inline-flex items-center gap-2 text-xs font-bold text-charcoal-600 hover:text-charcoal-950 px-3 py-1.5 rounded-xl bg-white border border-cream-border shadow-subtle transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        <span> Back to Dashboard</span>
+        <span> Back to Welcome</span>
       </button>
 
       {/* ─── Active Session Card ─── */}
@@ -239,7 +254,7 @@ setTimeout(() => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@company.com"
-                className="w-full bg-cream-50 border border-cream-border text-xs text-charcoal-900 font-bold p-2.5 rounded-xl focus:border-brand-500 focus:outline-none"
+                className="w-full bg-cream-50 border border-cream-border text-xs text-charcoal-900 font-medium p-2.5 rounded-xl placeholder:text-charcoal-400 placeholder:font-normal focus:border-brand-500 focus:outline-none"
                 required
               />
             </div>
@@ -252,8 +267,8 @@ setTimeout(() => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full bg-cream-50 border border-cream-border text-xs text-charcoal-900 font-bold p-2.5 rounded-xl focus:border-brand-500 focus:outline-none"
+                placeholder="Enter your password"
+                className="w-full bg-cream-50 border border-cream-border text-xs text-charcoal-900 font-medium p-2.5 rounded-xl placeholder:text-charcoal-400 placeholder:font-normal focus:border-brand-500 focus:outline-none"
                 required
               />
             </div>
@@ -310,40 +325,35 @@ setTimeout(() => {
         </div>
       </div>
 
-      {/* 1-Click Fast Switcher Cards */}
+      {/* Demo access reference */}
       <div className="bg-white border border-cream-border rounded-2xl p-6 shadow-subtle space-y-3">
         <h3 className="font-bold text-sm text-charcoal-900 flex items-center justify-between pb-2 border-b border-cream-border">
-          <span>1-Click Fast Persona Switcher</span>
-          <span className="text-xs font-mono text-charcoal-400">Instant Demo Access</span>
+          <span>Demo access accounts</span>
+          <span className="text-xs font-mono text-charcoal-400">Select an account to fill the form</span>
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <button
-            type="button"
-            onClick={() => handleQuickPersona('SALES_REP', 'sarah.rep@dealflow360.com')}
-            className="p-3 bg-cream-50/70 hover:bg-brand-50 border border-cream-border hover:border-brand-400 rounded-xl text-left transition-all"
-          >
-            <span className="font-bold text-xs text-charcoal-900 block">Sarah Miller</span>
-            <span className="text-[10px] font-mono text-charcoal-500 block">Sales Representative</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleQuickPersona('SALES_MANAGER', 'marcus.mgr@dealflow360.com')}
-            className="p-3 bg-cream-50/70 hover:bg-brand-50 border border-cream-border hover:border-brand-400 rounded-xl text-left transition-all"
-          >
-            <span className="font-bold text-xs text-charcoal-900 block">Marcus Sterling</span>
-            <span className="text-[10px] font-mono text-charcoal-500 block">Sales Manager (Approver)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleQuickPersona('CUSTOMER', 'david@abccorp.com')}
-            className="p-3 bg-cream-50/70 hover:bg-brand-50 border border-cream-border hover:border-brand-400 rounded-xl text-left transition-all"
-          >
-            <span className="font-bold text-xs text-charcoal-900 block">David Miller</span>
-            <span className="text-[10px] font-mono text-charcoal-500 block">ABC Corp (Buyer Portal)</span>
-          </button>
+        <div className="grid grid-cols-1 gap-2">
+          {DEMO_ACCOUNTS.map((account) => (
+            <button
+              key={account.email}
+              type="button"
+              onClick={() => {
+                setEmail(account.email);
+                setPassword(account.password);
+                setSelectedRole(account.role);
+                setActiveTab('LOGIN');
+              }}
+              className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1.6fr_0.8fr] items-center gap-2 sm:gap-3 p-3 bg-cream-50/70 hover:bg-brand-50 border border-cream-border hover:border-brand-400 rounded-xl text-left transition-all"
+            >
+              <span>
+                <span className="font-bold text-xs text-charcoal-900 block">{account.label}</span>
+                <span className="text-[10px] text-charcoal-500 block">{account.name}</span>
+              </span>
+              <span className="text-[10px] font-mono text-charcoal-500">{account.userId}</span>
+              <span className="text-[10px] font-mono text-charcoal-500 break-all">{account.email}</span>
+              <span className="text-[10px] font-mono text-charcoal-500">{account.password}</span>
+            </button>
+          ))}
         </div>
       </div>
 

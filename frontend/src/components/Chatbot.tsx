@@ -22,10 +22,16 @@ export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
-      text: "Hello! I'm your DealFlow360 AI Assistant. How can I help you?",
+      text: "Hello! I'm your DealFlow360 Assistant. I can guide you about discount limits, quotations, confirmation, and bills. Try asking: How much discount does a Silver member get?",
       sender: "bot",
     },
   ]);
+
+  const suggestedQuestions = [
+    "How much discount does a Silver member get?",
+    "How do I generate a quotation?",
+    "How do I download my bill?",
+  ];
 
   const sendMessage = async () => {
     const message = input.trim();
@@ -152,6 +158,24 @@ export default function Chatbot() {
                 </div>
               </div>
             )}
+
+            {messages.length === 1 && !loading && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Try asking</p>
+                {suggestedQuestions.map((question) => (
+                  <button
+                    key={question}
+                    type="button"
+                    onClick={() => {
+                      setInput(question);
+                    }}
+                    className="block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-xs text-gray-600 hover:border-blue-300 hover:text-blue-700"
+                  >
+                    {question}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Input */}
@@ -178,7 +202,7 @@ export default function Chatbot() {
             </div>
 
             <p className="mt-2 text-center text-[10px] text-gray-400">
-              Powered by Gemini
+              DealFlow360 help assistant
             </p>
           </div>
         </div>

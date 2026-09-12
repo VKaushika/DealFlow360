@@ -22,7 +22,7 @@ async function runDemoFlowTest() {
   console.log('===============================================================');
 
   // 1. Authenticate Sales Rep (Sarah)
-  console.log('\n[Step 1] Authenticating Sales Rep (Sarah Miller)...');
+  console.log('\n[Step 1] Authenticating Sales Rep (Priya Singh)...');
   const repTokenRes = await req('/auth/demo-token?role=SALES_REP');
   const repToken = repTokenRes.token;
   const repHeaders = { Authorization: `Bearer ${repToken}` };

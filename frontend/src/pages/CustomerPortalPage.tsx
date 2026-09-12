@@ -14,6 +14,9 @@ import {
   Package,
   ShieldCheck,
   LogOut,
+  Plus,
+  Trash2,
+  X,
 } from 'lucide-react';
 
 interface CustomerPortalPageProps {
@@ -29,6 +32,13 @@ export const CustomerPortalPage: React.FC<
   const [quotations, setQuotations] = useState<any[]>([]);
   const [selectedQuote, setSelectedQuote] =
     useState<any>(null);
+  const [catalogProducts, setCatalogProducts] = useState<any[]>([]);
+  const [requestItems, setRequestItems] = useState<Array<{ productId: string; quantity: number }>>([]);
+  const [showQuotationForm, setShowQuotationForm] = useState(false);
+  const [requestTitle, setRequestTitle] = useState('');
+  const [requestNotes, setRequestNotes] = useState('');
+  const [billReadyForQuote, setBillReadyForQuote] = useState<string | null>(null);
+  const [billGenerating, setBillGenerating] = useState(false);
 
   const [counterDiscountPct, setCounterDiscountPct] =
     useState<number>(20);
@@ -93,9 +103,77 @@ export const CustomerPortalPage: React.FC<
     }
   };
 
+  const fetchCatalog = async () => {
+    try {
+      const res = await api.getProducts();
+      if (res.data.success) {
+        setCatalogProducts(res.data.data || []);
+      }
+    } catch (err) {
+      console.error('Error loading product catalog:', err);
+    }
+  };
+
   useEffect(() => {
     fetchCustomerData();
+    fetchCatalog();
   }, [role]);
+
+  const addRequestItem = (productId: string) => {
+    setRequestItems((current) => {
+      const existing = current.find((item) => item.productId === productId);
+      if (existing) {
+        return current.map((item) => item.productId === productId
+          ? { ...item, quantity: item.quantity + 1 }
+          : item);
+      }
+      return [...current, { productId, quantity: 1 }];
+    });
+  };
+
+  const handleGenerateQuotation = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!user?.customerId || requestItems.length === 0) {
+      setFeedback({ type: 'error', message: 'Select at least one product for your quotation request.' });
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setFeedback(null);
+      const res = await api.createQuotation({
+        customerId: user.customerId,
+        title: requestTitle.trim() || 'Customer quotation request',
+        customerNotes: requestNotes.trim(),
+        submitForApproval: true,
+        items: requestItems.map((item) => {
+          const product = catalogProducts.find((candidate) => candidate._id === item.productId);
+          return {
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: product?.unitPrice || 0,
+            discountPct: 0,
+          };
+        }),
+      });
+
+      if (res.data.success) {
+        setFeedback({ type: 'success', message: `Quotation request ${res.data.data.quoteNumber} sent for review.` });
+        setRequestItems([]);
+        setRequestTitle('');
+        setRequestNotes('');
+        setShowQuotationForm(false);
+        await fetchCustomerData();
+      }
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err.response?.data?.message || err.message || 'Unable to generate quotation request.',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   /*
    * ============================================================
@@ -199,6 +277,8 @@ export const CustomerPortalPage: React.FC<
           message: res.data.message,
         });
 
+        setBillReadyForQuote(selectedQuote._id);
+
         await handleSelectQuote(
           selectedQuote._id
         );
@@ -213,6 +293,35 @@ export const CustomerPortalPage: React.FC<
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleGenerateBill = async () => {
+    if (!billReadyForQuote) return;
+
+    try {
+      setBillGenerating(true);
+      const res = await api.generateBilling(billReadyForQuote);
+      const invoices = res.data.data?.invoices || [];
+      const subscriptions = res.data.data?.subscriptions || [];
+      const quote = selectedQuote;
+      const invoiceRows = invoices.flatMap((invoice: any) => invoice.items || []).map((item: any) => `
+        <tr><td>${item.productName}</td><td>${item.quantity}</td><td>INR ${Number(item.lineTotal || 0).toLocaleString('en-IN')}</td></tr>`).join('');
+      const subscriptionRows = subscriptions.map((subscription: any) => `
+        <tr><td>${subscription.productName}</td><td>${subscription.quantity}</td><td>INR ${Number(subscription.totalRecurringAmount || 0).toLocaleString('en-IN')} / month</td></tr>`).join('');
+      const invoiceNumber = invoices[0]?.invoiceNumber || `STATEMENT-${quote.quoteNumber}`;
+      const billHtml = `<!doctype html><html><head><meta charset="utf-8"><title>${invoiceNumber}</title><style>body{font-family:Arial,sans-serif;color:#14202b;max-width:850px;margin:40px auto;padding:0 24px}header{display:flex;justify-content:space-between;border-bottom:3px solid #f59e0b;padding-bottom:20px}h1{margin:0}table{width:100%;border-collapse:collapse;margin-top:24px}th,td{text-align:left;padding:12px;border-bottom:1px solid #ddd}th{background:#fff7e6}.total{margin-top:28px;text-align:right;font-size:20px;font-weight:700}</style></head><body><header><div><h1>DealFlow360</h1><p>Customer Bill</p></div><div><strong>${invoiceNumber}</strong><p>${new Date().toLocaleDateString('en-IN')}</p></div></header><h2>${quote.title}</h2><p>Customer: ${quote.customer?.companyName || 'Customer account'}</p><table><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${invoiceRows}${subscriptionRows}</tbody></table><p class="total">Total: INR ${Number(quote.totalAmount || 0).toLocaleString('en-IN')}</p><p>Thank you for choosing DealFlow360.</p></body></html>`;
+      const downloadUrl = URL.createObjectURL(new Blob([billHtml], { type: 'text/html' }));
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${invoiceNumber}.html`;
+      link.click();
+      URL.revokeObjectURL(downloadUrl);
+      setFeedback({ type: 'success', message: 'Your bill has been generated and downloaded.' });
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err.response?.data?.message || err.message || 'Unable to generate the bill.' });
+    } finally {
+      setBillGenerating(false);
     }
   };
 
@@ -258,7 +367,8 @@ export const CustomerPortalPage: React.FC<
             if (onBack) {
               onBack();
             } else {
-              onNavigate('dashboard');
+              logout();
+              onNavigate('login');
             }
           }}
           className="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-cream-border rounded-xl text-xs font-bold text-charcoal-700 hover:text-charcoal-950 hover:bg-cream-50 shadow-subtle transition-all"
@@ -432,7 +542,23 @@ export const CustomerPortalPage: React.FC<
       {/* ========================================================
           QUICK ACTIONS
       ========================================================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+        <button
+          type="button"
+          onClick={() => setShowQuotationForm(true)}
+          className="bg-brand-500 border border-brand-500 rounded-2xl p-5 text-left hover:bg-brand-600 shadow-subtle transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/80 flex items-center justify-center">
+              <Plus className="w-5 h-5 text-brand-700" />
+            </div>
+            <div>
+              <p className="font-black text-sm text-charcoal-950">Generate Quotation</p>
+              <p className="text-xs text-charcoal-700 mt-1">Request pricing for new products</p>
+            </div>
+          </div>
+        </button>
 
         <button
           type="button"
@@ -489,6 +615,62 @@ export const CustomerPortalPage: React.FC<
         </button>
 
       </div>
+
+      {showQuotationForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal-950/40 p-4 backdrop-blur-sm">
+          <form onSubmit={handleGenerateQuotation} className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white border border-cream-border rounded-2xl p-6 shadow-2xl space-y-5">
+            <div className="flex items-start justify-between gap-4 border-b border-cream-border pb-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider font-black text-brand-600">New request</p>
+                <h2 className="text-xl font-black text-charcoal-950 mt-1">Generate a quotation</h2>
+                <p className="text-xs text-charcoal-500 mt-1">Choose products and quantities. Our team will review the request and send pricing.</p>
+              </div>
+              <button type="button" onClick={() => setShowQuotationForm(false)} className="p-2 rounded-lg text-charcoal-400 hover:bg-cream-100" aria-label="Close quotation form">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-charcoal-500 font-bold mb-1.5">Request title</label>
+              <input value={requestTitle} onChange={(event) => setRequestTitle(event.target.value)} placeholder="e.g. Q4 laptop deployment" className="w-full bg-cream-50 border border-cream-border rounded-xl px-3 py-2.5 text-sm placeholder:text-charcoal-400 focus:border-brand-500 focus:outline-none" />
+            </div>
+
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-charcoal-500 font-bold mb-1.5">Add products</label>
+              <select defaultValue="" onChange={(event) => { if (event.target.value) addRequestItem(event.target.value); event.target.value = ''; }} className="w-full bg-cream-50 border border-cream-border rounded-xl px-3 py-2.5 text-sm text-charcoal-700 focus:border-brand-500 focus:outline-none">
+                <option value="">Select a product...</option>
+                {catalogProducts.map((product) => <option key={product._id} value={product._id}>{product.name} ({product.sku})</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              {requestItems.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-cream-border p-4 text-center text-xs text-charcoal-400">No products selected yet.</p>
+              ) : requestItems.map((item) => {
+                const product = catalogProducts.find((candidate) => candidate._id === item.productId);
+                return (
+                  <div key={item.productId} className="flex items-center gap-3 rounded-xl border border-cream-border bg-cream-50/60 p-3">
+                    <Package className="w-4 h-4 text-brand-600 shrink-0" />
+                    <span className="flex-1 text-xs font-bold text-charcoal-800">{product?.name || 'Product'}</span>
+                    <input type="number" min="1" value={item.quantity} onChange={(event) => setRequestItems((current) => current.map((entry) => entry.productId === item.productId ? { ...entry, quantity: Math.max(1, Number(event.target.value)) } : entry))} className="w-20 rounded-lg border border-cream-border bg-white px-2 py-1.5 text-xs text-center focus:border-brand-500 focus:outline-none" aria-label={`Quantity for ${product?.name || 'product'}`} />
+                    <button type="button" onClick={() => setRequestItems((current) => current.filter((entry) => entry.productId !== item.productId))} className="p-1.5 text-charcoal-400 hover:text-rose-600" aria-label={`Remove ${product?.name || 'product'}`}><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-charcoal-500 font-bold mb-1.5">Notes for the sales team</label>
+              <textarea value={requestNotes} onChange={(event) => setRequestNotes(event.target.value)} rows={3} placeholder="Add delivery timing, configuration, or other requirements" className="w-full resize-none bg-cream-50 border border-cream-border rounded-xl px-3 py-2.5 text-sm placeholder:text-charcoal-400 focus:border-brand-500 focus:outline-none" />
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-cream-border pt-4">
+              <button type="button" onClick={() => setShowQuotationForm(false)} className="px-4 py-2.5 rounded-xl border border-cream-border bg-cream-50 text-xs font-bold text-charcoal-700">Cancel</button>
+              <button type="submit" disabled={submitting || requestItems.length === 0} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500 text-xs font-black text-charcoal-950 disabled:opacity-50"><Send className="w-3.5 h-3.5" />{submitting ? 'Sending...' : 'Send quotation request'}</button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* ========================================================
           FEEDBACK
@@ -1023,6 +1205,18 @@ export const CustomerPortalPage: React.FC<
                           <CheckCircle2 className="w-4 h-4" />
                           Accept & Confirm
                         </button>
+
+                        {(billReadyForQuote === selectedQuote._id || selectedQuote.isCustomerConfirmed) && (
+                          <button
+                            type="button"
+                            onClick={handleGenerateBill}
+                            disabled={billGenerating}
+                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-500 hover:bg-brand-600 text-charcoal-950 rounded-xl text-xs font-black shadow-subtle disabled:opacity-50"
+                          >
+                            <Receipt className="w-4 h-4" />
+                            {billGenerating ? 'Generating Bill...' : 'Generate Bill & Download'}
+                          </button>
+                        )}
 
                       </div>
 
